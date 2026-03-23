@@ -1,0 +1,18 @@
+extends RefCounted
+
+const VIEW_SIZE := Vector2(960, 540)
+const TILE_SIZE := 32
+const PLAYER_START_LIVES := 3
+const PLAYER_SPAWN := Vector2(96, 480)
+const BASE_ENEMY_COUNT := 3
+const MAX_ENEMY_COUNT := 6
+const MAX_ACTIVE_BUBBLES := 3
+const POINTS_PER_POP := 100
+
+const WORLD_LAYER_MASK := 1
+const PLAYER_LAYER_MASK := 2
+const ENEMY_LAYER_MASK := 4
+const BUBBLE_LAYER_MASK := 8
+
+const TRAPPED_BUBBLE_CEILING_Y := 88.0
+const ROUND_TRANSITION_TIME := 1.2
