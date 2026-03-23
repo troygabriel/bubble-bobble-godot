@@ -5,19 +5,7 @@ const PlayerScript = preload("res://scripts/game/Player.gd")
 const EnemyScript = preload("res://scripts/game/Enemy.gd")
 const BubbleScript = preload("res://scripts/game/Bubble.gd")
 const HUDScript = preload("res://scripts/ui/HUD.gd")
-
-const BG_TEXTURES := [
-	preload("res://assets/sprites/cavern/bg0.png"),
-	preload("res://assets/sprites/cavern/bg1.png"),
-	preload("res://assets/sprites/cavern/bg2.png"),
-	preload("res://assets/sprites/cavern/bg3.png")
-]
-const BLOCK_TEXTURES := [
-	preload("res://assets/sprites/cavern/block0.png"),
-	preload("res://assets/sprites/cavern/block1.png"),
-	preload("res://assets/sprites/cavern/block2.png"),
-	preload("res://assets/sprites/cavern/block3.png")
-]
+const AiAssets = preload("res://scripts/core/AiAssets.gd")
 
 signal round_cleared(score: int, lives: int, next_round: int)
 signal game_over(final_score: int)
@@ -38,7 +26,6 @@ var player: CharacterBody2D
 var hud: CanvasLayer
 var bubble_container: Node2D
 var enemy_container: Node2D
-var block_visuals: Node2D
 
 
 func _ready() -> void:
@@ -69,7 +56,7 @@ func _ready() -> void:
 
 func _create_background() -> void:
 	var background := Sprite2D.new()
-	background.texture = BG_TEXTURES[(round_number - 1) % BG_TEXTURES.size()]
+	background.texture = AiAssets.background_texture((round_number - 1) % 4)
 	background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	background.centered = false
 	background.position = Vector2.ZERO
@@ -84,16 +71,11 @@ func _create_background() -> void:
 func _build_tile_map() -> void:
 	tile_map = TileMap.new()
 	tile_map.name = "TileMap"
-	tile_map.z_index = 1
+	tile_map.z_index = 2
 	if tile_map.get_layers_count() == 0:
 		tile_map.add_layer(0)
 	tile_map.tile_set = _create_tile_set()
 	add_child(tile_map)
-
-	block_visuals = Node2D.new()
-	block_visuals.name = "BlockVisuals"
-	block_visuals.z_index = 2
-	add_child(block_visuals)
 
 	_fill_column(0, 0, 16)
 	_fill_column(29, 0, 16)
@@ -114,49 +96,35 @@ func _create_tile_set() -> TileSet:
 	tileset.set_physics_layer_collision_mask(0, GameConstants.PLAYER_LAYER_MASK | GameConstants.ENEMY_LAYER_MASK)
 
 	var source := TileSetAtlasSource.new()
-	var block_texture: Texture2D = BLOCK_TEXTURES[(round_number - 1) % BLOCK_TEXTURES.size()]
-	source.texture = block_texture
-	source.texture_region_size = Vector2i(block_texture.get_width(), block_texture.get_height())
-	source.create_tile(Vector2i.ZERO)
-
-	var tile_data := source.get_tile_data(Vector2i.ZERO, 0)
-	tile_data.add_collision_polygon(0)
-	tile_data.set_collision_polygon_points(0, 0, PackedVector2Array([
-		Vector2.ZERO,
-		Vector2(GameConstants.TILE_SIZE, 0),
-		Vector2(GameConstants.TILE_SIZE, GameConstants.TILE_SIZE),
-		Vector2(0, GameConstants.TILE_SIZE)
-	]))
-
+	source.texture = AiAssets.BLOCK_SHEET
+	source.texture_region_size = AiAssets.BLOCK_FRAME_SIZE
 	tile_source_id = tileset.add_source(source, 0)
+	var atlas_source: TileSetAtlasSource = tileset.get_source(tile_source_id)
+	for index in range(4):
+		var atlas_coords := Vector2i(index, 0)
+		atlas_source.create_tile(atlas_coords)
+		var tile_data := atlas_source.get_tile_data(atlas_coords, 0)
+		tile_data.add_collision_polygon(0)
+		tile_data.set_collision_polygon_points(0, 0, PackedVector2Array([
+			Vector2.ZERO,
+			Vector2(GameConstants.TILE_SIZE, 0),
+			Vector2(GameConstants.TILE_SIZE, GameConstants.TILE_SIZE),
+			Vector2(0, GameConstants.TILE_SIZE)
+		]))
+
 	return tileset
 
 
 func _fill_row(y: int, start_x: int, end_x: int) -> void:
+	var atlas_coords := AiAssets.block_atlas_coords((round_number - 1) % 4)
 	for x in range(start_x, end_x + 1):
-		var cell := Vector2i(x, y)
-		tile_map.set_cell(0, cell, tile_source_id, Vector2i.ZERO, 0)
-		_add_block_visual(cell)
+		tile_map.set_cell(0, Vector2i(x, y), tile_source_id, atlas_coords, 0)
 
 
 func _fill_column(x: int, start_y: int, end_y: int) -> void:
+	var atlas_coords := AiAssets.block_atlas_coords((round_number - 1) % 4)
 	for y in range(start_y, end_y + 1):
-		var cell := Vector2i(x, y)
-		tile_map.set_cell(0, cell, tile_source_id, Vector2i.ZERO, 0)
-		_add_block_visual(cell)
-
-
-func _add_block_visual(cell: Vector2i) -> void:
-	var block_texture: Texture2D = BLOCK_TEXTURES[(round_number - 1) % BLOCK_TEXTURES.size()]
-	var sprite := Sprite2D.new()
-	sprite.texture = block_texture
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.position = Vector2(
-		cell.x * GameConstants.TILE_SIZE + GameConstants.TILE_SIZE * 0.5,
-		cell.y * GameConstants.TILE_SIZE + GameConstants.TILE_SIZE * 0.5
-	)
-	sprite.scale = Vector2.ONE * (GameConstants.TILE_SIZE / float(block_texture.get_width()))
-	block_visuals.add_child(sprite)
+		tile_map.set_cell(0, Vector2i(x, y), tile_source_id, atlas_coords, 0)
 
 
 func _spawn_player() -> void:
@@ -240,6 +208,7 @@ func _on_player_damaged(lives_left: int) -> void:
 func _handle_round_clear() -> void:
 	state_locked = true
 	player.set_controls_locked(true)
+	AudioManager.play_sfx(&"clear")
 	hud.show_banner("ROUND %02d CLEAR" % round_number)
 	await get_tree().create_timer(GameConstants.ROUND_TRANSITION_TIME).timeout
 	round_cleared.emit(score, lives, round_number + 1)
@@ -248,6 +217,7 @@ func _handle_round_clear() -> void:
 func _handle_game_over() -> void:
 	state_locked = true
 	player.set_controls_locked(true)
+	AudioManager.play_sfx(&"game_over")
 	hud.show_banner("GAME OVER")
 	await get_tree().create_timer(GameConstants.ROUND_TRANSITION_TIME).timeout
 	game_over.emit(score)

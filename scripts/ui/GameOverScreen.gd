@@ -1,6 +1,6 @@
 extends Control
 
-const OVER_TEXTURE = preload("res://assets/sprites/cavern/over.png")
+const AiAssets = preload("res://scripts/core/AiAssets.gd")
 
 signal restart_requested
 
@@ -15,7 +15,7 @@ func _ready() -> void:
 
 	var background := TextureRect.new()
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	background.texture = OVER_TEXTURE
+	background.texture = AiAssets.game_over_texture()
 	background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	add_child(background)
@@ -62,6 +62,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("restart") or event.is_action_pressed("start") or event.is_action_pressed("fire"):
+		AudioManager.play_sfx(&"start")
 		restart_requested.emit()
 
 

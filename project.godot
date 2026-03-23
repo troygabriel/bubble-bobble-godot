@@ -12,7 +12,11 @@ config_version=5
 
 config/name="Bubble Bobble Clone"
 run/main_scene="res://Main.tscn"
-config/icon="res://assets/sprites/cavern/still.png"
+config/icon="res://assets_ai/processed/visual/ui/project_icon.png"
+
+[autoload]
+
+AudioManager="*res://scripts/core/AudioManager.gd"
 
 [display]
 

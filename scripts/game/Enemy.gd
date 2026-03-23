@@ -1,19 +1,7 @@
 extends CharacterBody2D
 
 const GameConstants = preload("res://scripts/core/Constants.gd")
-
-const WALK_LEFT := [
-	preload("res://assets/sprites/cavern/robot001.png"),
-	preload("res://assets/sprites/cavern/robot002.png"),
-	preload("res://assets/sprites/cavern/robot003.png"),
-	preload("res://assets/sprites/cavern/robot004.png")
-]
-const WALK_RIGHT := [
-	preload("res://assets/sprites/cavern/robot011.png"),
-	preload("res://assets/sprites/cavern/robot012.png"),
-	preload("res://assets/sprites/cavern/robot013.png"),
-	preload("res://assets/sprites/cavern/robot014.png")
-]
+const AiAssets = preload("res://scripts/core/AiAssets.gd")
 
 @export var move_speed := 90.0
 @export var gravity_strength := 1100.0
@@ -45,9 +33,9 @@ func _ready() -> void:
 	add_child(visual_root)
 
 	sprite = Sprite2D.new()
-	sprite.texture = WALK_LEFT[0]
+	sprite.texture = AiAssets.enemy_walk_frames(-1)[0]
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2.ONE * 0.5
+	sprite.scale = Vector2.ONE * 0.52
 	visual_root.add_child(sprite)
 
 	hurtbox = Area2D.new()
@@ -83,7 +71,7 @@ func _physics_process(delta: float) -> void:
 	if should_turn:
 		direction *= -1
 
-	var frames: Array[Texture2D] = WALK_RIGHT if direction > 0 else WALK_LEFT
+	var frames = AiAssets.enemy_walk_frames(direction)
 	sprite.texture = frames[int(animation_time * 8.0) % frames.size()]
 
 

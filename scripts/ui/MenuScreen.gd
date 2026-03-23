@@ -1,18 +1,6 @@
 extends Control
 
-const TITLE_TEXTURE = preload("res://assets/sprites/cavern/title.png")
-const SPACE_FRAMES := [
-	preload("res://assets/sprites/cavern/space0.png"),
-	preload("res://assets/sprites/cavern/space1.png"),
-	preload("res://assets/sprites/cavern/space2.png"),
-	preload("res://assets/sprites/cavern/space3.png"),
-	preload("res://assets/sprites/cavern/space4.png"),
-	preload("res://assets/sprites/cavern/space5.png"),
-	preload("res://assets/sprites/cavern/space6.png"),
-	preload("res://assets/sprites/cavern/space7.png"),
-	preload("res://assets/sprites/cavern/space8.png"),
-	preload("res://assets/sprites/cavern/space9.png")
-]
+const AiAssets = preload("res://scripts/core/AiAssets.gd")
 
 signal start_requested
 
@@ -26,7 +14,7 @@ func _ready() -> void:
 
 	var background := TextureRect.new()
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	background.texture = TITLE_TEXTURE
+	background.texture = AiAssets.title_texture()
 	background.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	add_child(background)
@@ -66,7 +54,7 @@ func _ready() -> void:
 	prompt_rect = TextureRect.new()
 	prompt_rect.position = Vector2(118, 292)
 	prompt_rect.size = Vector2(344, 88)
-	prompt_rect.texture = SPACE_FRAMES[0]
+	prompt_rect.texture = AiAssets.prompt_frames()[0]
 	prompt_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	prompt_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	add_child(prompt_rect)
@@ -78,7 +66,8 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	pulse_time += delta
-	prompt_rect.texture = SPACE_FRAMES[int(pulse_time * 10.0) % SPACE_FRAMES.size()]
+	var frames = AiAssets.prompt_frames()
+	prompt_rect.texture = frames[int(pulse_time * 10.0) % frames.size()]
 	prompt_rect.modulate.a = 0.72 + 0.28 * abs(sin(pulse_time * 2.4))
 
 
@@ -87,6 +76,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("start") or event.is_action_pressed("fire"):
+		AudioManager.play_sfx(&"start")
 		start_requested.emit()
 
 

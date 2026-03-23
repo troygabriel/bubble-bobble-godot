@@ -26,10 +26,14 @@ Bonus feature:
 
 Known bugs / limitations:
 - There is only one room layout; later rounds reuse it with more/faster enemies.
-- No audio is included.
+- The project was validated headlessly in the CLI environment, but you should still do a full editor playthrough before final submission.
 
 Project notes:
 - Entry scene: `Main.tscn`
 - Main gameplay logic lives in `scripts/game/Level01.gd`
 - Best score is saved locally and loaded automatically on launch
-- Uses Bubble Bobble-style sprites adapted from the Cavern reference spriteset; no generative art is used
+- AI-generated source files live in `assets_ai/raw/`
+- Final in-game AI assets live in `assets_ai/processed/`
+- Assignment documentation lives in `docs/`
+- `scripts/core/AiAssets.gd` centralizes visual asset references
+- `scripts/core/AudioManager.gd` adds runtime audio buses and playback for the new SFX/music

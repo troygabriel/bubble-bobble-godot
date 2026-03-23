@@ -1,28 +1,7 @@
 extends CharacterBody2D
 
 const GameConstants = preload("res://scripts/core/Constants.gd")
-
-const STILL_TEXTURE = preload("res://assets/sprites/cavern/still.png")
-const RUN_LEFT := [
-	preload("res://assets/sprites/cavern/run00.png"),
-	preload("res://assets/sprites/cavern/run01.png"),
-	preload("res://assets/sprites/cavern/run02.png"),
-	preload("res://assets/sprites/cavern/run03.png")
-]
-const RUN_RIGHT := [
-	preload("res://assets/sprites/cavern/run10.png"),
-	preload("res://assets/sprites/cavern/run11.png"),
-	preload("res://assets/sprites/cavern/run12.png"),
-	preload("res://assets/sprites/cavern/run13.png")
-]
-const BLOW_LEFT = preload("res://assets/sprites/cavern/blow0.png")
-const BLOW_RIGHT = preload("res://assets/sprites/cavern/blow1.png")
-const RECOIL_LEFT = preload("res://assets/sprites/cavern/recoil0.png")
-const RECOIL_RIGHT = preload("res://assets/sprites/cavern/recoil1.png")
-const FALL_TEXTURES := [
-	preload("res://assets/sprites/cavern/fall0.png"),
-	preload("res://assets/sprites/cavern/fall1.png")
-]
+const AiAssets = preload("res://scripts/core/AiAssets.gd")
 
 signal bubble_requested(spawn_position: Vector2, direction: int)
 signal damaged(lives_left: int)
@@ -64,9 +43,9 @@ func _ready() -> void:
 	add_child(visual_root)
 
 	sprite = Sprite2D.new()
-	sprite.texture = STILL_TEXTURE
+	sprite.texture = AiAssets.player_still()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2.ONE * 0.55
+	sprite.scale = Vector2.ONE * 0.58
 	visual_root.add_child(sprite)
 
 
@@ -88,6 +67,7 @@ func _physics_process(delta: float) -> void:
 		axis = Input.get_axis("move_left", "move_right")
 		if Input.is_action_just_pressed("jump") and is_on_floor():
 			velocity.y = jump_velocity
+			AudioManager.play_sfx(&"jump")
 	else:
 		axis = 0.0
 
@@ -106,6 +86,7 @@ func _physics_process(delta: float) -> void:
 
 	if not controls_locked and Input.is_action_just_pressed("fire") and fire_timer <= 0.0 and active_bubbles < GameConstants.MAX_ACTIVE_BUBBLES:
 		fire_timer = fire_cooldown
+		AudioManager.play_sfx(&"fire")
 		bubble_requested.emit(global_position + Vector2(24 * facing, -10), facing)
 
 
@@ -136,6 +117,7 @@ func take_damage() -> void:
 		return
 
 	lives -= 1
+	AudioManager.play_sfx(&"hurt")
 	velocity = Vector2.ZERO
 	if lives > 0:
 		global_position = spawn_position
@@ -145,20 +127,20 @@ func take_damage() -> void:
 
 func _update_sprite(axis: float) -> void:
 	if invulnerability_timer > invulnerability_time * 0.75:
-		sprite.texture = RECOIL_RIGHT if facing > 0 else RECOIL_LEFT
+		sprite.texture = AiAssets.player_recoil(facing)
 		return
 
 	if fire_timer > fire_cooldown * 0.45:
-		sprite.texture = BLOW_RIGHT if facing > 0 else BLOW_LEFT
+		sprite.texture = AiAssets.player_blow(facing)
 		return
 
 	if not is_on_floor():
-		sprite.texture = FALL_TEXTURES[int(animation_time * 10.0) % FALL_TEXTURES.size()]
+		sprite.texture = AiAssets.player_fall(facing)
 		return
 
 	if abs(axis) > 0.1:
-		var frames: Array[Texture2D] = RUN_RIGHT if facing > 0 else RUN_LEFT
+		var frames = AiAssets.player_run_frames(facing)
 		sprite.texture = frames[int(animation_time * 10.0) % frames.size()]
 		return
 
-	sprite.texture = STILL_TEXTURE
+	sprite.texture = AiAssets.player_still()

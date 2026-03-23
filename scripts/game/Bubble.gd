@@ -1,26 +1,7 @@
 extends Area2D
 
 const GameConstants = preload("res://scripts/core/Constants.gd")
-
-const ORB_FRAMES := [
-	preload("res://assets/sprites/cavern/orb0.png"),
-	preload("res://assets/sprites/cavern/orb1.png"),
-	preload("res://assets/sprites/cavern/orb2.png"),
-	preload("res://assets/sprites/cavern/orb3.png"),
-	preload("res://assets/sprites/cavern/orb4.png"),
-	preload("res://assets/sprites/cavern/orb5.png"),
-	preload("res://assets/sprites/cavern/orb6.png")
-]
-const TRAP_FRAMES := [
-	preload("res://assets/sprites/cavern/trap00.png"),
-	preload("res://assets/sprites/cavern/trap01.png"),
-	preload("res://assets/sprites/cavern/trap02.png"),
-	preload("res://assets/sprites/cavern/trap03.png"),
-	preload("res://assets/sprites/cavern/trap04.png"),
-	preload("res://assets/sprites/cavern/trap05.png"),
-	preload("res://assets/sprites/cavern/trap06.png"),
-	preload("res://assets/sprites/cavern/trap07.png")
-]
+const AiAssets = preload("res://scripts/core/AiAssets.gd")
 
 signal trapped(enemy: Node)
 signal popped(points_awarded: int)
@@ -53,9 +34,9 @@ func _ready() -> void:
 	add_child(collision)
 
 	sprite = Sprite2D.new()
-	sprite.texture = ORB_FRAMES[0]
+	sprite.texture = AiAssets.bubble_orb_frames()[0]
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2.ONE * 2.0
+	sprite.scale = Vector2.ONE * 0.8
 	add_child(sprite)
 
 
@@ -95,6 +76,7 @@ func trap_enemy(enemy: Node) -> void:
 
 	trapped_enemy = enemy
 	trapped_enemy.capture(self)
+	AudioManager.play_sfx(&"trap")
 	trapped.emit(enemy)
 	_update_sprite()
 
@@ -103,6 +85,7 @@ func pop() -> void:
 	if trapped_enemy != null and is_instance_valid(trapped_enemy):
 		trapped_enemy.pop_destroy()
 		trapped_enemy = null
+		AudioManager.play_sfx(&"pop")
 		popped.emit(GameConstants.POINTS_PER_POP)
 	queue_free()
 
@@ -110,11 +93,13 @@ func pop() -> void:
 func _update_sprite() -> void:
 	var pulse := 1.0 + 0.05 * sin(age * 8.0)
 	if trapped_enemy == null:
-		var frame: int = clampi(int(age * 12.0), 0, ORB_FRAMES.size() - 1)
+		var orb_frames = AiAssets.bubble_orb_frames()
+		var frame: int = clampi(int(age * 12.0), 0, orb_frames.size() - 1)
 		if age > horizontal_duration:
 			frame = 3 + int(age * 6.0) % 4
-		sprite.texture = ORB_FRAMES[frame]
-		sprite.scale = Vector2.ONE * (2.0 * pulse)
+		sprite.texture = orb_frames[frame]
+		sprite.scale = Vector2.ONE * (0.8 * pulse)
 	else:
-		sprite.texture = TRAP_FRAMES[int(hover_time * 6.0) % TRAP_FRAMES.size()]
-		sprite.scale = Vector2.ONE * (0.36 * pulse)
+		var trap_frames = AiAssets.bubble_trap_frames()
+		sprite.texture = trap_frames[int(hover_time * 6.0) % trap_frames.size()]
+		sprite.scale = Vector2.ONE * (0.44 * pulse)
